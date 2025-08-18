@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Don&#39;t Starve Checklist</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1 class="title">Don&#39;t Starve Checklist</h1>
+      <section class="sections">
+        <div class="panel">
+          <h2 class="panel-title">First Autumn Base</h2>
+          <div class="panel-images">
+            <div class="panel-image-wrap">
+              <img
+                class="panel-image"
+                data-key="science-machine"
+                data-legacy-src="https://static.wikia.nocookie.net/dont-starve-game/images/f/f1/Science_Machine_Build.png/revision/latest?cb=20220330224433"
+                src="images/science_machine_build.png"
+                alt="Science Machine"
+              />
+            </div>
+            <div class="panel-image-wrap">
+              <img
+                class="panel-image"
+                data-key="firepit"
+                data-legacy-src="https://static.wikia.nocookie.net/dont-starve-game/images/8/8e/Firepit_Build.png/revision/latest?cb=20240716222427"
+                src="images/firepit_build.png"
+                alt="Firepit"
+              />
+            </div>
+            <div class="panel-image-wrap">
+              <img
+                class="panel-image"
+                data-key="ice-box"
+                data-legacy-src="https://static.wikia.nocookie.net/dont-starve-game/images/1/19/Ice_Box_Build.png/revision/latest?cb=20220331224707"
+                src="images/ice_box_build.png"
+                alt="Ice Box"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="panel kills">
+          <h2 class="panel-title">Mini Bosses</h2>
+          <div class="panel-images">
+            <div class="panel-image-wrap">
+              <img
+                class="panel-image"
+                data-key="spider-queen"
+                data-name="Spider Queen"
+                data-hp="2500"
+                src="images/spider_queen.png"
+                alt="Spider Queen"
+              />
+            </div>
+            <div class="panel-image-wrap">
+              <img
+                class="panel-image"
+                data-key="treeguard"
+                data-name="Treeguard"
+                data-hp="3750"
+                src="images/treeguard.png"
+                alt="Treeguard"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const STORAGE_PREFIX = 'dscheck_dim_';
+        const storageKey = (raw) => `${STORAGE_PREFIX}${encodeURIComponent(raw)}`;
+
+        // Auto-generate captions for Kills images using data attributes
+        document.querySelectorAll('.panel.kills .panel-image-wrap').forEach((wrapElement) => {
+          const imgElement = wrapElement.querySelector('.panel-image');
+          if (!imgElement) return;
+          const name = imgElement.getAttribute('data-name') || imgElement.alt || '';
+          const hp = imgElement.getAttribute('data-hp');
+          const captionHtml = hp ? `${name}<br/>❤️ ${hp}` : name;
+          let caption = wrapElement.querySelector('.panel-caption');
+          if (!caption) {
+            caption = document.createElement('div');
+            caption.className = 'panel-caption';
+            wrapElement.appendChild(caption);
+          }
+          caption.innerHTML = captionHtml;
+        });
+
+        document.querySelectorAll('.panel-image').forEach((imageElement) => {
+          const wrapper = imageElement.closest('.panel-image-wrap');
+          const primaryId = imageElement.getAttribute('data-key') || imageElement.getAttribute('src');
+          const legacyId = imageElement.getAttribute('data-legacy-src');
+
+          // Restore, with migration from legacy URL-based key if present
+          let saved = null;
+          try {
+            saved = localStorage.getItem(storageKey(primaryId));
+            if (saved === null && legacyId) {
+              const legacySaved = localStorage.getItem(storageKey(legacyId));
+              if (legacySaved !== null) {
+                saved = legacySaved;
+                localStorage.setItem(storageKey(primaryId), saved);
+                localStorage.removeItem(storageKey(legacyId));
+              }
+            }
+          } catch (_) {}
+
+          if (saved === '1') {
+            imageElement.classList.add('is-dimmed');
+            if (wrapper) wrapper.classList.add('is-dimmed');
+          }
+
+          // Toggle and persist on click
+          imageElement.addEventListener('click', () => {
+            imageElement.classList.toggle('is-dimmed');
+            if (wrapper) wrapper.classList.toggle('is-dimmed');
+            const isDimmed = imageElement.classList.contains('is-dimmed');
+            try {
+              localStorage.setItem(storageKey(primaryId), isDimmed ? '1' : '0');
+            } catch (_) {}
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
