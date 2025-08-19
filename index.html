@@ -157,109 +157,15 @@
           <h2 class="panel-title">Kills</h2>
           <div class="panel-section">
             <h3 class="panel-title">Mini Bosses</h3>
-            <div class="panel-images">
-              <div class="panel-image-wrap">
-                <img
-                  class="panel-image"
-                  data-key="spider-queen"
-                  data-name="Spider Queen"
-                  data-hp="2500"
-                  src="images/spider_queen.png"
-                  alt="Spider Queen"
-                />
-              </div>
-              <div class="panel-image-wrap">
-                <img
-                  class="panel-image"
-                  data-key="treeguard"
-                  data-name="Treeguard"
-                  data-hp="3750"
-                  src="images/treeguard.png"
-                  alt="Treeguard"
-                />
-              </div>
-              <div class="panel-image-wrap">
-                <img
-                  class="panel-image"
-                  data-key="mactusk"
-                  data-name="MacTusk"
-                  data-hp="300"
-                  src="images/mactusk.png"
-                  alt="MacTusk"
-                />
-              </div>
-            </div>
+            <div id="kills-mini" class="panel-images"></div>
           </div>
           <div class="panel-section">
             <h3 class="panel-title">Seasonal Bosses</h3>
-            <div class="panel-images">
-              <div class="panel-image-wrap">
-                <img
-                  class="panel-image"
-                  data-key="deerclops"
-                  data-name="Deerclops"
-                  data-hp="4000"
-                  src="images/deerclops.png"
-                  alt="Deerclops"
-                />
-              </div>
-              <div class="panel-image-wrap">
-                <img
-                  class="panel-image"
-                  data-key="moose-goose"
-                  data-name="Moose/Goose"
-                  data-hp="6000"
-                  src="images/moose_goose.png"
-                  alt="Moose/Goose"
-                />
-              </div>
-              <div class="panel-image-wrap">
-                <img
-                  class="panel-image"
-                  data-key="bearger"
-                  data-name="Bearger"
-                  data-hp="6000"
-                  src="images/bearger.png"
-                  alt="Bearger"
-                />
-              </div>
-              <div class="panel-image-wrap">
-                <img
-                  class="panel-image"
-                  data-key="antlion"
-                  data-name="Antlion"
-                  data-hp="6000"
-                  src="images/antlion.png"
-                  alt="Antlion"
-                />
-              </div>
-            </div>
+            <div id="kills-seasonal" class="panel-images"></div>
           </div>
           <div class="panel-section">
             <h3 class="panel-title">Anytime Bosses</h3>
-            <div class="panel-images">
-              <div class="panel-image-wrap">
-                <img
-                  class="panel-image"
-                  data-key="lord-of-the-fruit-flies"
-                  data-name="Lord of the Fruit Flies"
-                  data-hp="1500"
-                  src="images/lord_of_the_fruit_flies.png"
-                  alt="Lord of the Fruit Flies"
-                />
-              </div>
-              <div class="panel-image-wrap">
-                <img
-                  class="panel-image"
-                  data-key="eye-of-terror"
-                  data-name="Eye of Terror"
-                  data-hp="5000"
-                  data-link="https://dontstarve.fandom.com/wiki/Eye_of_Terror"
-                  src="images/eye_of_terror.png"
-                  alt="Eye of Terror"
-                />
-              </div>
-            </div>
+            <div id="kills-anytime" class="panel-images"></div>
           </div>
         </div>
         
@@ -461,6 +367,92 @@
 
           })
           .catch(() => { setupDragDrop(); });
+
+        // Render Kills panel from local bosses.csv
+        const findKillsSection = (sectionTitle) => {
+          switch (sectionTitle) {
+            case 'Mini Bosses': return document.getElementById('kills-mini');
+            case 'Seasonal Bosses': return document.getElementById('kills-seasonal');
+            case 'Anytime Bosses': return document.getElementById('kills-anytime');
+            default: return null;
+          }
+        };
+
+        const bindImagePersistence = (imageElement) => {
+          const wrapper = imageElement.closest('.panel-image-wrap');
+          const primaryId = imageElement.getAttribute('data-key') || imageElement.getAttribute('src');
+          let saved = null;
+          try { saved = localStorage.getItem(storageKey(primaryId)); } catch (_) {}
+          if (saved === '1') {
+            imageElement.classList.add('is-dimmed');
+            if (wrapper) wrapper.classList.add('is-dimmed');
+          }
+          imageElement.addEventListener('click', () => {
+            imageElement.classList.toggle('is-dimmed');
+            if (wrapper) wrapper.classList.toggle('is-dimmed');
+            const isDimmed = imageElement.classList.contains('is-dimmed');
+            try { localStorage.setItem(storageKey(primaryId), isDimmed ? '1' : '0'); } catch (_) {}
+          });
+        };
+
+        fetch(`https://raw.githubusercontent.com/elliemary/dstchecklist/main/bosses.csv?t=${Date.now()}`, { cache: 'no-cache' })
+          .then((r) => {
+            if (!r.ok) throw new Error('Failed to load bosses.csv');
+            return r.text();
+          })
+          .then((csvText) => {
+            const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+            const header = lines.shift();
+            const rows = lines.map((l) => {
+              const parts = l.split(',');
+              const name = (parts[0] || '').replace(/^"|"$/g, '');
+              const url = (parts[1] || '').trim();
+              const hp = (parts[2] || '').trim();
+              const image_src = (parts[3] || '').trim();
+              const section = (parts[4] || '').trim();
+              const suggested = (parts[5] || '0').trim();
+              const suggested_order = parseInt(suggested, 10);
+              return { name, url, hp, image_src, section, suggested_order: isNaN(suggested_order) ? 0 : suggested_order };
+            });
+
+            // Clear kills containers
+            ['Mini Bosses', 'Seasonal Bosses', 'Anytime Bosses'].forEach((sec) => {
+              const c = findKillsSection(sec);
+              if (c) c.innerHTML = '';
+            });
+
+            const bySection = rows.reduce((acc, row) => {
+              const key = row.section || 'Anytime Bosses';
+              if (!acc[key]) acc[key] = [];
+              acc[key].push(row);
+              return acc;
+            }, {});
+
+            ['Mini Bosses', 'Seasonal Bosses', 'Anytime Bosses'].forEach((sec) => {
+              const list = (bySection[sec] || []).slice().sort((a, b) => a.suggested_order - b.suggested_order);
+              const container = findKillsSection(sec);
+              if (!container) return;
+              list.forEach(({ name, hp, image_src }) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'panel-image-wrap';
+                const img = document.createElement('img');
+                img.className = 'panel-image';
+                img.alt = name;
+                img.src = image_src;
+                img.setAttribute('data-name', name);
+                if (hp) img.setAttribute('data-hp', hp);
+                img.setAttribute('data-key', `kills-${name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+                wrap.appendChild(img);
+                const cap = document.createElement('div');
+                cap.className = 'panel-caption';
+                cap.innerHTML = hp ? `${name}<br/>❤️ ${hp}` : name;
+                wrap.appendChild(cap);
+                container.appendChild(wrap);
+                bindImagePersistence(img);
+              });
+            });
+          })
+          .catch(() => {});
 
         // Auto-generate captions for boss panels using data attributes
         document.querySelectorAll('.panel.kills .panel-image-wrap, .panel.seasonal-bosses .panel-image-wrap, .panel.anytime-bosses .panel-image-wrap').forEach((wrapElement) => {
