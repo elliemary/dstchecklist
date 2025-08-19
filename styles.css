@@ -29,7 +29,7 @@ body {
 .sections {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  grid-template-rows: auto auto auto auto;
+  grid-template-rows: auto auto auto auto auto;
   gap: 24px;
   width: min(100%, 1280px);
 }
@@ -40,7 +40,7 @@ body {
 
 /* Pin boss panels to the top rows of the right column */
 .panel.kills {
-  grid-row: 1 / 5;
+  grid-row: 1 / 6;
   align-self: stretch;
   height: 100%;
 }
@@ -50,6 +50,7 @@ body {
 .first-winter { grid-row: 2; }
 .first-spring { grid-row: 3; }
 .first-summer { grid-row: 4; }
+.misc { grid-row: 5; }
 .panel.seasonal-bosses { grid-row: auto; }
 .panel.anytime-bosses { grid-row: auto; }
 
@@ -65,6 +66,7 @@ body {
   border: 2px solid #ffffff;
   border-radius: 12px;
   padding: 12px 14px;
+  position: relative;
 }
 
 .first-autumn .panel-title {
@@ -194,20 +196,29 @@ body {
   opacity: 0.5;
 }
 
+/* Drag and drop visuals for seasonal items */
+.draggable-image { cursor: grab; }
+.panel-image-wrap.is-dragging { opacity: 0.4; }
+.panel-images.dropzone-hover { outline: 2px dashed #ffffff; outline-offset: 4px; }
+
+/* Drag handle for subsections */
+.section-drag-handle { display: none; }
+
 /* Colorful gradient title */
-.title {
-  margin: 0;
+.title { display: none; }
+
+.title-image {
+  display: block;
+  max-width: min(90%, 600px);
+  height: auto;
+  margin: 8px auto 0;
+}
+
+.site-subtitle {
   text-align: center;
-  font-size: clamp(2.25rem, 6vw, 5rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-  color: #ffffff; /* fallback */
-  background: linear-gradient(90deg, #ff5252, #ffb400, #40c463, #2b6df3, #a653f7);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  margin-top: 4px;
+  font-size: clamp(1rem, 2.8vw, 1.5rem);
+  font-weight: 700;
 }
 
 .clear-actions {
