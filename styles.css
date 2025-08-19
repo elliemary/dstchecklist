@@ -213,7 +213,7 @@ body {
 .clear-actions {
   display: flex;
   justify-content: center;
-  margin: 20px 0 32px;
+  margin: 20px 0 64px;
 }
 
 .clear-button {
@@ -231,3 +231,21 @@ body {
 
 .clear-button:hover { background: rgba(255, 255, 255, 0.08); }
 .clear-button:active { opacity: 0.85; }
+
+/* Responsive: mobile layout */
+@media (max-width: 700px) {
+  .sections {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  /* Kills should not try to span rows when in single-column */
+  .panel.kills { grid-row: auto; height: auto; }
+
+  /* Force one image per row everywhere */
+  .panel-images {
+    grid-template-columns: 1fr !important;
+    grid-auto-flow: row !important;
+    grid-auto-columns: initial !important;
+  }
+}

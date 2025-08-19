@@ -413,6 +413,88 @@
           }
         });
 
+        // Render items from CSV into seasonal panels
+        const sectionKeyFor = (season, section) => `${season}::${section}`;
+        const findPanelSection = (season, section) => {
+          const panel = document.querySelector(`.panel h2.panel-title:nth-of-type(1)`)?.parentElement;
+          const panelsByTitle = Array.from(document.querySelectorAll('.panel')).reduce((acc, p) => {
+            const title = p.querySelector('h2.panel-title')?.textContent?.trim();
+            if (title) acc[title] = p;
+            return acc;
+          }, {});
+          const panelEl = panelsByTitle[season];
+          if (!panelEl) return null;
+          const sectionEls = Array.from(panelEl.querySelectorAll('.panel-section'));
+          for (const s of sectionEls) {
+            const t = s.querySelector('.panel-title')?.textContent?.trim();
+            if (t === section) return s.querySelector('.panel-images');
+          }
+          return null;
+        };
+
+        fetch('objects.csv')
+          .then((r) => r.text())
+          .then((csvText) => {
+            const lines = csvText.split(/\r?\n/).filter(Boolean);
+            const header = lines.shift();
+            const rows = lines.map((l) => {
+              const parts = l.split(',');
+              const name = parts[0];
+              const image = parts[1];
+              const season = parts[2];
+              const section = parts[3];
+              return { name, image, season, section };
+            });
+
+            // Clear containers
+            ['First Autumn','First Winter','First Spring','First Summer'].forEach((season) => {
+              ['Find on Map','Base Building','Personal Items'].forEach((section) => {
+                const target = findPanelSection(season, section);
+                if (target) target.innerHTML = '';
+              });
+            });
+
+            // Populate
+            rows.forEach(({ name, image, season, section }) => {
+              const target = findPanelSection(season, section);
+              if (!target) return;
+              const wrap = document.createElement('div');
+              wrap.className = 'panel-image-wrap';
+              const img = document.createElement('img');
+              img.className = 'panel-image';
+              img.alt = name;
+              img.src = image;
+              img.setAttribute('data-key', `${season}-${section}-${name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+              wrap.appendChild(img);
+              target.appendChild(wrap);
+            });
+
+            // Reapply interactions and personal-items class after render
+            document.querySelectorAll('.panel-section > .panel-title').forEach((titleEl) => {
+              if (titleEl.textContent.trim() === 'Personal Items') {
+                titleEl.parentElement?.classList.add('personal-items');
+              }
+            });
+
+            // Rebind click toggle persistence
+            document.querySelectorAll('.panel-image').forEach((imageElement) => {
+              const wrapper = imageElement.closest('.panel-image-wrap');
+              const primaryId = imageElement.getAttribute('data-key') || imageElement.getAttribute('src');
+              const legacyId = imageElement.getAttribute('data-legacy-src');
+              const saved = localStorage.getItem(`${STORAGE_PREFIX}${encodeURIComponent(primaryId)}`);
+              if (saved === '1') {
+                imageElement.classList.add('is-dimmed');
+                if (wrapper) wrapper.classList.add('is-dimmed');
+              }
+              imageElement.addEventListener('click', () => {
+                imageElement.classList.toggle('is-dimmed');
+                if (wrapper) wrapper.classList.toggle('is-dimmed');
+                const isDimmed = imageElement.classList.contains('is-dimmed');
+                localStorage.setItem(`${STORAGE_PREFIX}${encodeURIComponent(primaryId)}`, isDimmed ? '1' : '0');
+              });
+            });
+          });
+
         // Auto-generate captions for boss panels using data attributes
         document.querySelectorAll('.panel.kills .panel-image-wrap, .panel.seasonal-bosses .panel-image-wrap, .panel.anytime-bosses .panel-image-wrap').forEach((wrapElement) => {
           const imgElement = wrapElement.querySelector('.panel-image');
